@@ -13,8 +13,28 @@ require("enterprise_script_service/spawner")
 require("enterprise_script_service/stat")
 
 module EnterpriseScriptService
+  SETUP_CODE = <<~'RUBY'
+      def puts(*args)
+        @stdout_buffer ||= ""
+        args.each do |arg|
+          @stdout_buffer << "#{arg}\n"
+        end
+        nil
+      end
+
+      def print(*args)
+        @stdout_buffer ||= ""
+        args.each do |arg|
+          @stdout_buffer << arg.to_s
+        end
+        nil
+      end
+    RUBY
+
   class << self
     def run(input:, sources:, instructions: nil, timeout: 1, instruction_quota: 100000, instruction_quota_start: 0, memory_quota: 8 << 20)
+      sources = [["setup", SETUP_CODE]] + sources
+
       packer = EnterpriseScriptService::Protocol.packer_factory.packer
 
       payload = {input: input, sources: sources}
